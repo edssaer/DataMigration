@@ -1,0 +1,1 @@
+& "E:\Inno Setup 6\iscc.exe" data_migration_installer.iss

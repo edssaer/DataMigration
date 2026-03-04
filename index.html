@@ -1,0 +1,1941 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据库迁移工具</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/axios@1.6.7/dist/axios.min.js"></script>
+    <!-- 配置Tailwind自定义颜色 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#6366F1',
+                        success: '#10B981',
+                        warning: '#F59E0B',
+                        danger: '#EF4444',
+                        info: '#64748B',
+                        light: '#F8FAFC',
+                        dark: '#1E293B',
+                        'primary-light': '#DBEAFE',
+                        'dark-light': '#334155',
+                        'primary-dark': '#2563EB',
+                        'secondary-light': '#A5B4FC',
+                        'neutral-100': '#F3F4F6',
+                        'neutral-200': '#E5E7EB',
+                        'neutral-300': '#D1D5DB',
+                        'neutral-400': '#9CA3AF',
+                        'neutral-500': '#6B7280',
+                        'neutral-600': '#4B5563',
+                        'neutral-700': '#374151',
+                        'neutral-800': '#1F2937',
+                        'neutral-900': '#111827'
+                    },
+                    boxShadow: {
+                        'card': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                        'card-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                        'dialog': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                        'button': '0 2px 4px rgba(0, 0, 0, 0.1)',
+                        'button-hover': '0 4px 8px rgba(0, 0, 0, 0.15)',
+                        'input': '0 1px 2px rgba(0, 0, 0, 0.05)',
+                        'dropdown': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.4s ease-out forwards',
+                        'slide-in': 'slideIn 0.3s ease-out forwards',
+                        'scale-in': 'scaleIn 0.3s ease-out forwards',
+                        'pulse': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'bounce-in': 'bounceIn 0.5s ease-out forwards'
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' }
+                        },
+                        slideIn: {
+                            '0%': { transform: 'translateX(100%)', opacity: '0' },
+                            '100%': { transform: 'translateX(0)', opacity: '1' }
+                        },
+                        scaleIn: {
+                            '0%': { transform: 'scale(0.95)', opacity: '0' },
+                            '100%': { transform: 'scale(1)', opacity: '1' }
+                        },
+                        bounceIn: {
+                            '0%': { transform: 'scale(0.8)', opacity: '0' },
+                            '70%': { transform: 'scale(1.05)', opacity: '1' },
+                            '100%': { transform: 'scale(1)', opacity: '1' }
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .transition-all-300 {
+                transition: all 300ms ease-in-out;
+            }
+            .transition-all-500 {
+                transition: all 500ms ease-in-out;
+            }
+            .text-shadow {
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            }
+            .text-shadow-lg {
+                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+            }
+            .bg-gradient-primary {
+                background: linear-gradient(135deg, #3B82F6 0%, #6366F1 100%);
+            }
+            .bg-gradient-secondary {
+                background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+            }
+            .bg-gradient-success {
+                background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            }
+            .card-hover {
+                transition: all 0.3s ease;
+            }
+            .card-hover:hover {
+                transform: translateY(-4px);
+            }
+            .btn-effect {
+                position: relative;
+                overflow: hidden;
+                z-index: 1;
+            }
+            .btn-effect::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+                transition: left 0.5s ease;
+                z-index: -1;
+            }
+            .btn-effect:hover::before {
+                left: 100%;
+            }
+            .input-focus {
+                @apply focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all-300;
+            }
+            .table-row-hover {
+                @apply hover:bg-primary/5 transition-all-300;
+            }
+            .menu-item {
+                position: relative;
+            }
+            .menu-item::after {
+                content: '';
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                width: 0;
+                height: 2px;
+                background-color: white;
+                transition: width 0.3s ease;
+            }
+            .menu-item:hover::after,
+            .menu-item.active::after {
+                width: 100%;
+            }
+            .scrollbar-thin {
+                scrollbar-width: thin;
+            }
+            .scrollbar-thin::-webkit-scrollbar {
+                width: 6px;
+                height: 6px;
+            }
+            .scrollbar-thin::-webkit-scrollbar-track {
+                background: #f1f1f1;
+                border-radius: 3px;
+            }
+            .scrollbar-thin::-webkit-scrollbar-thumb {
+                background: #c1c1c1;
+                border-radius: 3px;
+            }
+            .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+                background: #a1a1a1;
+            }
+        }
+    </style>
+    <style>
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+        .bg-pattern {
+            background-image: radial-gradient(#3B82F6 0.5px, transparent 0.5px);
+            background-size: 20px 20px;
+        }
+        .btn {
+            position: relative;
+            overflow: hidden;
+        }
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+        .btn:hover::before {
+            left: 100%;
+        }
+        .form-input:focus,
+        .form-select:focus {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+        .table-row {
+            transition: all 0.2s ease;
+        }
+        .table-row:hover {
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+        .dialog-content {
+            animation: scaleIn 0.3s ease-out forwards;
+        }
+        .card {
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body class="font-sans bg-light min-h-screen">
+    <div id="app" class="flex flex-col h-screen">
+        <!-- 顶部导航栏 -->
+        <header class="bg-gradient-primary text-white h-16 flex items-center justify-between px-8 shadow-lg">
+            <div class="text-2xl font-bold text-shadow-lg flex items-center">
+                <svg class="w-8 h-8 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"/>
+                </svg>
+                数据库迁移工具
+            </div>
+            <nav>
+                <ul class="flex space-x-8">
+                    <li>
+                        <button 
+                            class="px-4 py-2 transition-all-300 menu-item active text-sm font-medium"
+                            data-menu="data-sources"
+                        >
+                            数据源管理
+                        </button>
+                    </li>
+                    <li>
+                        <button 
+                            class="px-4 py-2 transition-all-300 menu-item text-sm font-medium"
+                            data-menu="tasks"
+                        >
+                            迁移任务
+                        </button>
+                    </li>
+                    <li>
+                        <button 
+                            class="px-4 py-2 transition-all-300 menu-item text-sm font-medium"
+                            data-menu="settings"
+                        >
+                            基础设置
+                        </button>
+                    </li>
+                </ul>
+            </nav>
+        </header>
+
+        <!-- 主内容区 -->
+        <main class="flex-1 p-6 overflow-y-auto bg-light bg-pattern">
+            <!-- 数据源管理 -->
+            <div id="data-sources" class="menu-content animate-fade-in">
+                <div class="bg-white rounded-xl shadow-card p-6 mb-6 card hover:shadow-card-hover">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold text-dark flex items-center">
+                            <svg class="w-6 h-6 mr-3 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            数据源管理
+                        </h2>
+                        <button 
+                            class="bg-gradient-primary hover:opacity-90 text-white px-4 py-2 rounded-lg transition-all-300 btn-effect shadow-button hover:shadow-button-hover flex items-center"
+                            id="add-data-source-btn"
+                        >
+                            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+                            </svg>
+                            新增数据源
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto rounded-lg border border-neutral-200 shadow-sm">
+                        <table class="w-full border-collapse">
+                            <thead>
+                                <tr class="bg-neutral-50">
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-neutral-700 border-b border-neutral-200">名称</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-neutral-700 border-b border-neutral-200">类型</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-neutral-700 border-b border-neutral-200">主机</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-neutral-700 border-b border-neutral-200">数据库</th>
+                                    <th class="px-4 py-3 text-right text-sm font-semibold text-neutral-700 border-b border-neutral-200">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="data-sources-table-body">
+                                <tr class="table-row-hover">
+                                    <td colspan="5" class="px-4 py-8 text-center text-neutral-500">暂无数据源</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 迁移任务管理 -->
+            <div id="tasks" class="menu-content hidden animate-fade-in">
+                <div class="bg-white rounded-xl shadow-card p-6 mb-6 card hover:shadow-card-hover">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold text-dark flex items-center">
+                            <svg class="w-6 h-6 mr-3 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z"/>
+                                <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z"/>
+                            </svg>
+                            迁移任务管理
+                        </h2>
+                        <button 
+                            class="bg-gradient-primary hover:opacity-90 text-white px-4 py-2 rounded-lg transition-all-300 btn-effect shadow-button hover:shadow-button-hover flex items-center"
+                            id="add-task-btn"
+                        >
+                            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+                            </svg>
+                            新建迁移任务
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto rounded-lg border border-neutral-200 shadow-sm">
+                        <table class="w-full border-collapse">
+                            <thead>
+                                <tr class="bg-neutral-50">
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-neutral-700 border-b border-neutral-200">任务名称</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-neutral-700 border-b border-neutral-200">源数据源</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-neutral-700 border-b border-neutral-200">目标数据源</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-neutral-700 border-b border-neutral-200">目标表</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-neutral-700 border-b border-neutral-200">创建时间</th>
+                                    <th class="px-4 py-3 text-right text-sm font-semibold text-neutral-700 border-b border-neutral-200">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tasks-table-body">
+                                <tr class="table-row-hover">
+                                    <td colspan="7" class="px-4 py-8 text-center text-neutral-500">暂无迁移任务</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 基础设置 -->
+            <div id="settings" class="menu-content hidden animate-fade-in">
+                <div class="bg-white rounded-xl shadow-card p-6 card hover:shadow-card-hover">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold text-dark flex items-center">
+                            <svg class="w-6 h-6 mr-3 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
+                            </svg>
+                            基础设置
+                        </h2>
+                    </div>
+                    <div class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-neutral-700 mb-2">默认字符集</label>
+                                <select 
+                                    id="default-charset" 
+                                    class="w-full px-4 py-2 border border-neutral-300 rounded-lg input-focus shadow-input"
+                                >
+                                    <option value="utf8mb4">utf8mb4</option>
+                                    <option value="utf8">utf8</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-neutral-700 mb-2">默认排序规则</label>
+                                <select 
+                                    id="default-collation" 
+                                    class="w-full px-4 py-2 border border-neutral-300 rounded-lg input-focus shadow-input"
+                                >
+                                    <option value="utf8mb4_general_ci">utf8mb4_general_ci</option>
+                                    <option value="utf8mb4_unicode_ci">utf8mb4_unicode_ci</option>
+                                    <option value="utf8_general_ci">utf8_general_ci</option>
+                                    <option value="utf8_unicode_ci">utf8_unicode_ci</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-neutral-700 mb-2">默认存储引擎</label>
+                                <select 
+                                    id="default-engine" 
+                                    class="w-full px-4 py-2 border border-neutral-300 rounded-lg input-focus shadow-input"
+                                >
+                                    <option value="InnoDB">InnoDB</option>
+                                    <option value="MyISAM">MyISAM</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-neutral-700 mb-2">批量插入大小</label>
+                                <input 
+                                    id="batch-size" 
+                                    type="number" 
+                                    min="1" 
+                                    max="10000" 
+                                    value="1000"
+                                    class="w-full px-4 py-2 border border-neutral-300 rounded-lg input-focus shadow-input"
+                                />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-neutral-700 mb-2">允许远程访问</label>
+                                <div class="flex items-center mt-1">
+                                    <button 
+                                        id="allow-remote-btn"
+                                        type="button"
+                                        class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary bg-neutral-300"
+                                        onclick="toggleRemoteAccess()"
+                                    >
+                                        <span 
+                                            id="remote-toggle-indicator"
+                                            class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-0"
+                                        ></span>
+                                    </button>
+                                    <span id="remote-status-text" class="ml-2 text-sm text-neutral-500">不允许</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-neutral-700 mb-2">日志级别</label>
+                                <select 
+                                    id="log-level" 
+                                    class="w-full px-4 py-2 border border-neutral-300 rounded-lg input-focus shadow-input"
+                                >
+                                    <option value="info">INFO</option>
+                                    <option value="debug">DEBUG</option>
+                                    <option value="error">ERROR</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="pt-4">
+                            <button 
+                                id="save-settings-btn"
+                                class="bg-gradient-primary hover:opacity-90 text-white px-5 py-2.5 rounded-lg transition-all-300 btn-effect shadow-button hover:shadow-button-hover flex items-center"
+                            >
+                                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd"/>
+                                </svg>
+                                保存设置
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 数据源编辑对话框 -->
+    <div id="data-source-dialog" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-2xl shadow-dialog w-full max-w-md dialog-content">
+            <div class="p-5 border-b border-neutral-200 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-neutral-800" id="data-source-dialog-title">新增数据源</h3>
+                <button id="close-data-source-dialog" class="text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-full p-2 transition-all-300">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="p-5 max-h-[75vh] overflow-y-auto pr-2 scrollbar-thin">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-neutral-700 mb-1.5">名称 <span class="text-danger">*</span></label>
+                        <input 
+                            id="data-source-name" 
+                            type="text" 
+                            placeholder="请输入数据源名称" 
+                            class="w-full px-4 py-2 border border-neutral-300 rounded-lg input-focus shadow-input"
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-neutral-700 mb-1.5">类型 <span class="text-danger">*</span></label>
+                        <select 
+                            id="data-source-type" 
+                            class="w-full px-4 py-2 border border-neutral-300 rounded-lg input-focus shadow-input"
+                        >
+                            <option value="mysql">MySQL</option>
+                            <option value="postgresql">PostgreSQL</option>
+                            <option value="sqlserver">SQL Server</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-neutral-700 mb-1.5">主机 <span class="text-danger">*</span></label>
+                        <input 
+                            id="data-source-host" 
+                            type="text" 
+                            placeholder="请输入主机地址" 
+                            class="w-full px-4 py-2 border border-neutral-300 rounded-lg input-focus shadow-input"
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-neutral-700 mb-1.5">端口 <span class="text-danger">*</span></label>
+                        <input 
+                            id="data-source-port" 
+                            type="number" 
+                            min="1" 
+                            max="65535" 
+                            class="w-full px-4 py-2 border border-neutral-300 rounded-lg input-focus shadow-input"
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-neutral-700 mb-1.5">用户名 <span class="text-danger">*</span></label>
+                        <input 
+                            id="data-source-user" 
+                            type="text" 
+                            placeholder="请输入用户名" 
+                            class="w-full px-4 py-2 border border-neutral-300 rounded-lg input-focus shadow-input"
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-neutral-700 mb-1.5">密码 <span class="text-danger">*</span></label>
+                        <input 
+                            id="data-source-password" 
+                            type="password" 
+                            placeholder="请输入密码" 
+                            class="w-full px-4 py-2 border border-neutral-300 rounded-lg input-focus shadow-input"
+                        />
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-neutral-700 mb-1.5">数据库 <span class="text-danger">*</span></label>
+                        <input 
+                            id="data-source-database" 
+                            type="text" 
+                            placeholder="请输入数据库名" 
+                            class="w-full px-4 py-2 border border-neutral-300 rounded-lg input-focus shadow-input"
+                        />
+                    </div>
+                    <div class="md:col-span-2 pt-2">
+                        <button 
+                            id="test-connection-btn"
+                            class="bg-gradient-secondary hover:opacity-90 text-white px-6 py-2.5 rounded-lg transition-all-300 btn-effect shadow-button hover:shadow-button-hover w-full flex items-center justify-center"
+                        >
+                            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            测试连接
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="p-5 border-t border-neutral-200 flex justify-end space-x-4">
+                <button 
+                    id="cancel-data-source" 
+                    class="px-5 py-2.5 border border-neutral-300 rounded-lg text-neutral-700 hover:bg-neutral-50 transition-all-300"
+                >
+                    取消
+                </button>
+                <button 
+                    id="save-data-source" 
+                    class="bg-gradient-primary hover:opacity-90 text-white px-5 py-2.5 rounded-lg transition-all-300 btn-effect shadow-button hover:shadow-button-hover"
+                >
+                    保存
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 任务编辑对话框 -->
+    <div id="task-dialog" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-dialog w-full max-w-4xl max-h-[85vh] dialog-content flex flex-col">
+            <div class="p-5 border-b border-neutral-200 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-neutral-800" id="task-dialog-title">新建迁移任务</h3>
+                <button id="close-task-dialog" class="text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-full p-2 transition-all-300">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="p-5 flex-1 overflow-y-auto pr-2 scrollbar-thin">
+                <div class="space-y-5">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-neutral-700 mb-1.5">任务名称 <span class="text-danger">*</span></label>
+                            <input 
+                                id="task-name" 
+                                type="text" 
+                                placeholder="请输入任务名称" 
+                                class="w-full px-4 py-2 border border-neutral-300 rounded-lg input-focus shadow-input"
+                            />
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-neutral-700 mb-1.5">源数据源 <span class="text-danger">*</span></label>
+                            <select 
+                                id="task-source-config" 
+                                class="w-full px-4 py-2 border border-neutral-300 rounded-lg input-focus shadow-input"
+                            >
+                            </select>
+                        </div>
+                        
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-neutral-700 mb-1.5">SQL查询 <span class="text-danger">*</span></label>
+                            <textarea 
+                                id="task-source-query" 
+                                placeholder="请输入SQL查询语句" 
+                                rows="4"
+                                class="w-full px-4 py-2 border border-neutral-300 rounded-lg input-focus shadow-input font-mono text-sm"
+                            ></textarea>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-neutral-700 mb-1.5">目标数据源 <span class="text-danger">*</span></label>
+                            <select 
+                                id="task-target-config" 
+                                class="w-full px-4 py-2 border border-neutral-300 rounded-lg input-focus shadow-input"
+                            >
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-neutral-700 mb-1.5">目标表名 <span class="text-danger">*</span></label>
+                            <input 
+                                id="task-target-table" 
+                                type="text" 
+                                placeholder="请输入目标表名" 
+                                class="w-full px-4 py-2 border border-neutral-300 rounded-lg input-focus shadow-input"
+                            />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-neutral-700 mb-1.5">表存在时处理方式</label>
+                            <select 
+                                id="task-if-exists" 
+                                class="w-full px-4 py-2 border border-neutral-300 rounded-lg input-focus shadow-input"
+                            >
+                                <option value="insert">直接插入</option>
+                                <option value="truncate">清空后插入</option>
+                                <option value="rename">重命名原表后插入</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-neutral-700 mb-2">表结构配置</label>
+                        <div class="mb-3 flex space-x-3">
+                            <button 
+                                id="generate-table-structure" 
+                                class="bg-gradient-primary hover:opacity-90 text-white px-4 py-2 rounded-lg transition-all-300 btn-effect shadow-button hover:shadow-button-hover flex items-center"
+                            >
+                                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                                生成表结构
+                            </button>
+                            <button 
+                                id="field-mapping-btn" 
+                                class="bg-gradient-secondary hover:opacity-90 text-white px-4 py-2 rounded-lg transition-all-300 btn-effect shadow-button hover:shadow-button-hover flex items-center"
+                            >
+                                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V8zm0 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2z" clip-rule="evenodd"/>
+                                </svg>
+                                字段映射
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto rounded-lg border border-neutral-200 shadow-sm">
+                            <table class="w-full border-collapse">
+                                <thead>
+                                    <tr class="bg-neutral-50">
+                                        <th class="px-4 py-3 text-left text-sm font-semibold text-neutral-700 border-b border-neutral-200">字段名</th>
+                                        <th class="px-4 py-3 text-left text-sm font-semibold text-neutral-700 border-b border-neutral-200">类型</th>
+                                        <th class="px-4 py-3 text-left text-sm font-semibold text-neutral-700 border-b border-neutral-200">长度</th>
+                                        <th class="px-4 py-3 text-left text-sm font-semibold text-neutral-700 border-b border-neutral-200">排序规则</th>
+                                        <th class="px-4 py-3 text-left text-sm font-semibold text-neutral-700 border-b border-neutral-200">允许空</th>
+                                        <th class="px-4 py-3 text-left text-sm font-semibold text-neutral-700 border-b border-neutral-200">主键</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-structure-body">
+                                    <tr class="table-row-hover">
+                                        <td colspan="6" class="px-4 py-6 text-center text-neutral-500">请点击生成表结构按钮</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-neutral-700 mb-1.5">定时设置</label>
+                            <select 
+                                id="task-schedule-type" 
+                                class="w-full px-4 py-2 border border-neutral-300 rounded-lg input-focus shadow-input"
+                            >
+                                <option value="manual">手动执行</option>
+                                <option value="daily">每天</option>
+                                <option value="weekly">每周</option>
+                                <option value="monthly">每月</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-neutral-700 mb-1.5">执行时间 (HH:MM)</label>
+                            <input 
+                                id="task-schedule-time" 
+                                type="text" 
+                                placeholder="00:00" 
+                                class="w-full px-4 py-2 border border-neutral-300 rounded-lg input-focus shadow-input"
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="p-5 border-t border-neutral-200 flex justify-end space-x-4">
+                <button 
+                    id="cancel-task" 
+                    class="px-5 py-2.5 border border-neutral-300 rounded-lg text-neutral-700 hover:bg-neutral-50 transition-all-300"
+                >
+                    取消
+                </button>
+                <button 
+                    id="save-task" 
+                    class="bg-gradient-primary hover:opacity-90 text-white px-5 py-2.5 rounded-lg transition-all-300 btn-effect shadow-button hover:shadow-button-hover"
+                >
+                    保存
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 字段映射对话框 -->
+    <div id="field-mapping-dialog" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-2xl shadow-dialog w-full max-w-3xl max-h-[80vh] overflow-y-auto dialog-content">
+            <div class="p-5 border-b border-neutral-200 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-neutral-800">字段映射</h3>
+                <button 
+                    id="close-field-mapping" 
+                    class="text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-full p-2 transition-all-300"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="p-5 scrollbar-thin">
+                <div class="mb-5">
+                    <label class="block text-sm font-medium text-neutral-700 mb-2">源表字段</label>
+                    <select 
+                        id="source-field" 
+                        class="w-full px-4 py-2 border border-neutral-300 rounded-lg input-focus shadow-input"
+                    >
+                        <option value="">请选择源表字段</option>
+                    </select>
+                </div>
+                <div class="mb-5">
+                    <label class="block text-sm font-medium text-neutral-700 mb-2">目标表字段</label>
+                    <select 
+                        id="target-field" 
+                        class="w-full px-4 py-2 border border-neutral-300 rounded-lg input-focus shadow-input"
+                    >
+                        <option value="">请选择目标表字段</option>
+                    </select>
+                </div>
+                <button 
+                    id="add-mapping" 
+                    class="bg-gradient-primary hover:opacity-90 text-white px-4 py-2.5 rounded-lg transition-all-300 btn-effect shadow-button hover:shadow-button-hover mb-5"
+                >
+                    添加映射
+                </button>
+                
+                <div class="mt-5">
+                    <h4 class="text-sm font-medium text-neutral-700 mb-3">已添加的映射</h4>
+                    <div id="mapping-list" class="space-y-3">
+                        <!-- 映射项将在这里动态添加 -->
+                    </div>
+                </div>
+            </div>
+            <div class="p-5 border-t border-neutral-200 flex justify-end space-x-4">
+                <button 
+                    id="cancel-field-mapping" 
+                    class="px-5 py-2.5 border border-neutral-300 rounded-lg text-neutral-700 hover:bg-neutral-50 transition-all-300"
+                >
+                    取消
+                </button>
+                <button 
+                    id="save-field-mapping" 
+                    class="bg-gradient-primary hover:opacity-90 text-white px-5 py-2.5 rounded-lg transition-all-300 btn-effect shadow-button hover:shadow-button-hover"
+                >
+                    保存映射
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 消息提示组件 -->
+    <div id="message-alert" class="fixed top-6 right-6 z-50 bg-white rounded-2xl shadow-lg p-5 flex items-center space-x-4 animate-slide-in hidden">
+        <div id="message-icon" class="w-10 h-10 rounded-full bg-info flex items-center justify-center">
+            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+            </svg>
+        </div>
+        <div id="message-text" class="text-neutral-800 font-medium"></div>
+    </div>
+
+    <!-- 确认对话框 -->
+    <div id="confirm-dialog" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-2xl shadow-dialog w-full max-w-md dialog-content">
+            <div class="p-6 border-b border-neutral-200">
+                <h3 class="text-xl font-bold text-neutral-800" id="confirm-title"></h3>
+            </div>
+            <div class="p-6">
+                <p id="confirm-message" class="text-neutral-600 text-lg"></p>
+            </div>
+            <div class="p-6 border-t border-neutral-200 flex justify-end space-x-4">
+                <button 
+                    id="confirm-cancel" 
+                    class="px-6 py-3 border border-neutral-300 rounded-lg text-neutral-700 hover:bg-neutral-50 transition-all-300"
+                >
+                    取消
+                </button>
+                <button 
+                    id="confirm-ok" 
+                    class="bg-gradient-primary hover:opacity-90 text-white px-6 py-3 rounded-lg transition-all-300 btn-effect shadow-button hover:shadow-button-hover"
+                >
+                    确定
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局状态
+        let activeMenu = 'data-sources';
+        let dataSources = [];
+        let tasks = [];
+        let settings = {
+            default_charset: 'utf8mb4',
+            default_collation: 'utf8mb4_general_ci',
+            default_engine: 'InnoDB',
+            batch_size: 1000,
+            allow_remote: false,
+            log_level: 'info'
+        };
+        
+        // 数据源编辑状态
+        let showDataSourceDialog = false;
+        let isEditDataSource = false;
+        let editingDataSourceIndex = -1;
+        let dataSourceForm = {
+            name: '',
+            type: 'mysql',
+            host: 'localhost',
+            port: 3306,
+            user: 'root',
+            password: '@W203222w',
+            database: ''
+        };
+        
+        // 任务编辑状态
+        let showTaskDialog = false;
+        let isEditTask = false;
+        let editingTaskId = '';
+        let taskForm = {
+            name: '',
+            source_config: '',
+            source_query: '',
+            target_config: '',
+            target_table: '',
+            if_exists: 'insert',
+            field_mapping: {},
+            table_structure: [],
+            schedule_type: 'manual',
+            schedule_time: '00:00'
+        };
+        
+        // 字段映射状态
+        let currentMappings = {};
+        
+        // 消息提示状态
+        let showMessage = false;
+        let message = '';
+        let messageType = 'info';
+        
+        // 确认对话框状态
+        let showConfirm = false;
+        let confirmTitle = '';
+        let confirmMessage = '';
+        let confirmType = 'info';
+        let confirmOkText = '确定';
+        let confirmCancelText = '取消';
+        let confirmCallback = null;
+
+        // DOM 元素
+        const menuButtons = document.querySelectorAll('[data-menu]');
+        const menuContents = document.querySelectorAll('.menu-content');
+        const addDataSourceBtn = document.getElementById('add-data-source-btn');
+        const dataSourceDialog = document.getElementById('data-source-dialog');
+        const closeDataSourceDialog = document.getElementById('close-data-source-dialog');
+        const cancelDataSource = document.getElementById('cancel-data-source');
+        const saveDataSource = document.getElementById('save-data-source');
+        const testConnectionBtn = document.getElementById('test-connection-btn');
+        const dataSourceName = document.getElementById('data-source-name');
+        const dataSourceType = document.getElementById('data-source-type');
+        const dataSourceHost = document.getElementById('data-source-host');
+        const dataSourcePort = document.getElementById('data-source-port');
+        const dataSourceUser = document.getElementById('data-source-user');
+        const dataSourcePassword = document.getElementById('data-source-password');
+        const dataSourceDatabase = document.getElementById('data-source-database');
+        const dataSourcesTableBody = document.getElementById('data-sources-table-body');
+        
+        const addTaskBtn = document.getElementById('add-task-btn');
+        const taskDialog = document.getElementById('task-dialog');
+        const closeTaskDialog = document.getElementById('close-task-dialog');
+        const cancelTask = document.getElementById('cancel-task');
+        const saveTaskBtn = document.getElementById('save-task');
+        const taskName = document.getElementById('task-name');
+        const taskSourceConfig = document.getElementById('task-source-config');
+        const taskSourceQuery = document.getElementById('task-source-query');
+        const taskTargetConfig = document.getElementById('task-target-config');
+        const taskTargetTable = document.getElementById('task-target-table');
+        const taskIfExists = document.getElementById('task-if-exists');
+        const generateTableStructure = document.getElementById('generate-table-structure');
+        const fieldMappingBtn = document.getElementById('field-mapping-btn');
+        const tableStructureBody = document.getElementById('table-structure-body');
+        const taskScheduleType = document.getElementById('task-schedule-type');
+        const taskScheduleTime = document.getElementById('task-schedule-time');
+        const fieldMappingDialog = document.getElementById('field-mapping-dialog');
+        const closeFieldMapping = document.getElementById('close-field-mapping');
+        const cancelFieldMapping = document.getElementById('cancel-field-mapping');
+        const saveFieldMapping = document.getElementById('save-field-mapping');
+        const sourceField = document.getElementById('source-field');
+        const targetField = document.getElementById('target-field');
+        const addMapping = document.getElementById('add-mapping');
+        const mappingList = document.getElementById('mapping-list');
+        const tasksTableBody = document.getElementById('tasks-table-body');
+        
+        const saveSettingsBtn = document.getElementById('save-settings-btn');
+        const defaultCharset = document.getElementById('default-charset');
+        const defaultCollation = document.getElementById('default-collation');
+        const defaultEngine = document.getElementById('default-engine');
+        const batchSize = document.getElementById('batch-size');
+        const logLevel = document.getElementById('log-level');
+        
+        const messageAlert = document.getElementById('message-alert');
+        const messageIcon = document.getElementById('message-icon');
+        const messageText = document.getElementById('message-text');
+        
+        const confirmDialog = document.getElementById('confirm-dialog');
+        const confirmTitleEl = document.getElementById('confirm-title');
+        const confirmMessageEl = document.getElementById('confirm-message');
+        const confirmCancelBtn = document.getElementById('confirm-cancel');
+        const confirmOkBtn = document.getElementById('confirm-ok');
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initEventListeners();
+            loadSettings();
+            loadDataSources();
+            loadTasks();
+            initRemoteToggle();
+        });
+
+        // 初始化事件监听器
+        function initEventListeners() {
+            // 导航菜单切换
+            menuButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const menu = this.getAttribute('data-menu');
+                    handleMenuSelect(menu);
+                });
+            });
+
+            // 数据源管理
+            addDataSourceBtn.addEventListener('click', function() {
+                openDataSourceDialog(false, -1);
+            });
+
+            closeDataSourceDialog.addEventListener('click', function() {
+                closeDataSourceDialogFunc();
+            });
+
+            cancelDataSource.addEventListener('click', function() {
+                closeDataSourceDialogFunc();
+            });
+
+            saveDataSource.addEventListener('click', function() {
+                saveDataSourceFunc();
+            });
+
+            testConnectionBtn.addEventListener('click', function() {
+                testConnectionFunc();
+            });
+
+            // 迁移任务管理
+            addTaskBtn.addEventListener('click', function() {
+                openTaskDialog(false, '');
+            });
+
+            closeTaskDialog.addEventListener('click', function() {
+                closeTaskDialogFunc();
+            });
+
+            cancelTask.addEventListener('click', function() {
+                closeTaskDialogFunc();
+            });
+
+            saveTaskBtn.addEventListener('click', function() {
+                saveTaskFunc();
+            });
+
+            generateTableStructure.addEventListener('click', function() {
+                generateTableStructureFunc();
+            });
+            
+            // 字段映射按钮点击事件
+            fieldMappingBtn.addEventListener('click', function() {
+                openFieldMappingDialog();
+            });
+            
+            // 关闭字段映射对话框
+            closeFieldMapping.addEventListener('click', function() {
+                closeFieldMappingDialog();
+            });
+            
+            cancelFieldMapping.addEventListener('click', function() {
+                closeFieldMappingDialog();
+            });
+            
+            // 保存字段映射
+            saveFieldMapping.addEventListener('click', function() {
+                saveFieldMappingFunc();
+            });
+            
+            // 添加映射
+            addMapping.addEventListener('click', function() {
+                addMappingFunc();
+            });
+
+            // 基础设置
+            saveSettingsBtn.addEventListener('click', function() {
+                saveSettingsFunc();
+            });
+
+            // 确认对话框
+            confirmCancelBtn.addEventListener('click', function() {
+                confirmCancelFunc();
+            });
+
+            confirmOkBtn.addEventListener('click', function() {
+                confirmOkFunc();
+            });
+        }
+
+        // 菜单切换
+        function handleMenuSelect(menu) {
+            activeMenu = menu;
+            
+            // 更新菜单按钮样式
+            menuButtons.forEach(button => {
+                const buttonMenu = button.getAttribute('data-menu');
+                if (buttonMenu === menu) {
+                    button.classList.add('active');
+                } else {
+                    button.classList.remove('active');
+                }
+            });
+            
+            // 显示对应内容
+            menuContents.forEach(content => {
+                if (content.id === menu) {
+                    content.classList.remove('hidden');
+                    // 添加淡入动画
+                    content.style.opacity = '0';
+                    setTimeout(() => {
+                        content.style.opacity = '1';
+                    }, 10);
+                } else {
+                    content.classList.add('hidden');
+                }
+            });
+        }
+
+        // 显示消息提示
+        function showMessageAlert(msg, type = 'info') {
+            message = msg;
+            messageType = type;
+            
+            messageText.textContent = message;
+            messageIcon.className = 'w-10 h-10 rounded-full flex items-center justify-center';
+            
+            let iconHtml = '';
+            switch (type) {
+                case 'success':
+                    messageIcon.classList.add('bg-success');
+                    iconHtml = '<svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>';
+                    break;
+                case 'error':
+                    messageIcon.classList.add('bg-danger');
+                    iconHtml = '<svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>';
+                    break;
+                default:
+                    messageIcon.classList.add('bg-info');
+                    iconHtml = '<svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>';
+            }
+            messageIcon.innerHTML = iconHtml;
+            
+            messageAlert.classList.remove('hidden');
+            
+            setTimeout(() => {
+                messageAlert.classList.add('hidden');
+            }, 3000);
+        }
+
+        // 显示确认对话框
+        function showConfirmDialog(title, message, type = 'info', okText = '确定', cancelText = '取消', callback) {
+            confirmTitle = title;
+            confirmMessage = message;
+            confirmType = type;
+            confirmOkText = okText;
+            confirmCancelText = cancelText;
+            confirmCallback = callback;
+            
+            confirmTitleEl.textContent = confirmTitle;
+            confirmMessageEl.textContent = confirmMessage;
+            confirmCancelBtn.textContent = confirmCancelText;
+            confirmOkBtn.textContent = confirmOkText;
+            
+            confirmOkBtn.className = 'px-6 py-3 rounded-lg transition-all-300 text-white btn shadow-md hover:shadow-lg';
+            if (type === 'warning') {
+                confirmOkBtn.classList.add('bg-warning', 'hover:bg-warning/90');
+            } else {
+                confirmOkBtn.classList.add('bg-primary', 'hover:bg-primary/90');
+            }
+            
+            confirmDialog.classList.remove('hidden');
+        }
+
+        function confirmOkFunc() {
+            if (confirmCallback) {
+                confirmCallback();
+            }
+            confirmDialog.classList.add('hidden');
+        }
+
+        function confirmCancelFunc() {
+            confirmDialog.classList.add('hidden');
+        }
+
+        // 数据源管理
+        function loadDataSources() {
+            axios.get('/api/data-sources').then(response => {
+                if (response.data.success) {
+                    dataSources = response.data.data;
+                    renderDataSourcesTable();
+                    updateDataSourceSelects();
+                }
+            });
+        }
+
+        function renderDataSourcesTable() {
+            if (dataSources.length === 0) {
+                dataSourcesTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="px-4 py-8 text-center text-info">暂无数据源</td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            let html = '';
+            dataSources.forEach((source, index) => {
+                html += `
+                    <tr class="hover:bg-light/50">
+                        <td class="px-4 py-2 border-b">${source.name}</td>
+                        <td class="px-4 py-2 border-b">${source.type}</td>
+                        <td class="px-4 py-2 border-b">${source.host}</td>
+                        <td class="px-4 py-2 border-b">${source.database}</td>
+                        <td class="px-4 py-2 border-b text-right">
+                            <button 
+                                class="bg-primary hover:bg-primary/90 text-white px-3 py-1 rounded-md text-sm mr-2 transition-all-300"
+                                onclick="editDataSource(${index})"
+                            >
+                                编辑
+                            </button>
+                            <button 
+                                class="bg-danger hover:bg-danger/90 text-white px-3 py-1 rounded-md text-sm transition-all-300"
+                                onclick="deleteDataSource(${index})"
+                            >
+                                删除
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            dataSourcesTableBody.innerHTML = html;
+        }
+
+        function editDataSource(index) {
+            openDataSourceDialog(true, index);
+        }
+
+        function deleteDataSource(index) {
+            showConfirmDialog('警告', '确定要删除这个数据源吗？', 'warning', '确定', '取消', () => {
+                axios.delete(`/api/data-sources/${index}`).then(response => {
+                    if (response.data.success) {
+                        showMessageAlert('删除成功', 'success');
+                        loadDataSources();
+                    } else {
+                        showMessageAlert('删除失败', 'error');
+                    }
+                });
+            });
+        }
+
+        function openDataSourceDialog(edit, index) {
+            isEditDataSource = edit;
+            editingDataSourceIndex = index;
+            
+            if (edit) {
+                document.getElementById('data-source-dialog-title').textContent = '编辑数据源';
+                const source = dataSources[index];
+                dataSourceForm = { ...source };
+            } else {
+                document.getElementById('data-source-dialog-title').textContent = '新增数据源';
+                dataSourceForm = {
+                    name: '',
+                    type: 'mysql',
+                    host: 'localhost',
+                    port: 3306,
+                    user: '',
+                    password: '',
+                    database: ''
+                };
+            }
+            
+            // 填充表单
+            dataSourceName.value = dataSourceForm.name;
+            dataSourceType.value = dataSourceForm.type;
+            dataSourceHost.value = dataSourceForm.host;
+            dataSourcePort.value = dataSourceForm.port;
+            dataSourceUser.value = dataSourceForm.user;
+            dataSourcePassword.value = dataSourceForm.password;
+            dataSourceDatabase.value = dataSourceForm.database;
+            
+            dataSourceDialog.classList.remove('hidden');
+        }
+
+        function closeDataSourceDialogFunc() {
+            dataSourceDialog.classList.add('hidden');
+        }
+
+        function testConnectionFunc() {
+            // 获取表单数据
+            const host = dataSourceHost.value;
+            const port = parseInt(dataSourcePort.value);
+            const user = dataSourceUser.value;
+            const password = dataSourcePassword.value;
+            const database = dataSourceDatabase.value;
+            
+            // 验证必填字段
+            if (!host || !user || !password || !database) {
+                showMessageAlert('请填写完整的数据库连接信息', 'error');
+                return;
+            }
+            
+            // 显示加载状态
+            const originalText = testConnectionBtn.innerHTML;
+            testConnectionBtn.innerHTML = '<svg class="w-4 h-4 inline mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>测试连接中...';
+            testConnectionBtn.disabled = true;
+            
+            // 调用测试连接 API
+            axios.post('/api/database/test', {
+                host: host,
+                port: port,
+                user: user,
+                password: password,
+                database: database
+            }).then(response => {
+                if (response.data.success) {
+                    showMessageAlert('连接测试成功', 'success');
+                } else {
+                    showMessageAlert('连接测试失败：' + response.data.message, 'error');
+                }
+            }).catch(error => {
+                showMessageAlert('连接测试失败：' + error.message, 'error');
+            }).finally(() => {
+                // 恢复按钮状态
+                testConnectionBtn.innerHTML = originalText;
+                testConnectionBtn.disabled = false;
+            });
+        }
+
+        function saveDataSourceFunc() {
+            // 获取表单数据
+            const name = dataSourceName.value.trim();
+            const type = dataSourceType.value;
+            const host = dataSourceHost.value.trim();
+            const port = dataSourcePort.value;
+            const user = dataSourceUser.value.trim();
+            const password = dataSourcePassword.value;
+            const database = dataSourceDatabase.value.trim();
+            
+            // 校验必填字段
+            if (!name) {
+                showMessageAlert('请输入数据源名称', 'error');
+                return;
+            }
+            if (!type) {
+                showMessageAlert('请选择数据库类型', 'error');
+                return;
+            }
+            if (!host) {
+                showMessageAlert('请输入主机地址', 'error');
+                return;
+            }
+            if (!port) {
+                showMessageAlert('请输入端口', 'error');
+                return;
+            }
+            if (!user) {
+                showMessageAlert('请输入用户名', 'error');
+                return;
+            }
+            if (!password) {
+                showMessageAlert('请输入密码', 'error');
+                return;
+            }
+            if (!database) {
+                showMessageAlert('请输入数据库名', 'error');
+                return;
+            }
+            
+            // 更新表单数据
+            dataSourceForm.name = name;
+            dataSourceForm.type = type;
+            dataSourceForm.host = host;
+            dataSourceForm.port = parseInt(port);
+            dataSourceForm.user = user;
+            dataSourceForm.password = password;
+            dataSourceForm.database = database;
+            
+            if (isEditDataSource) {
+                axios.put(`/api/data-sources/${editingDataSourceIndex}`, dataSourceForm).then(response => {
+                    if (response.data.success) {
+                        showMessageAlert('更新成功', 'success');
+                        closeDataSourceDialogFunc();
+                        loadDataSources();
+                    } else {
+                        showMessageAlert('更新失败', 'error');
+                    }
+                });
+            } else {
+                axios.post('/api/data-sources', dataSourceForm).then(response => {
+                    if (response.data.success) {
+                        showMessageAlert('添加成功', 'success');
+                        closeDataSourceDialogFunc();
+                        loadDataSources();
+                    } else {
+                        showMessageAlert('添加失败', 'error');
+                    }
+                });
+            }
+        }
+
+        // 迁移任务管理
+        function loadTasks() {
+            axios.get('/api/tasks').then(response => {
+                if (response.data.success) {
+                    tasks = response.data.data;
+                    renderTasksTable();
+                }
+            });
+        }
+
+        function renderTasksTable() {
+            if (tasks.length === 0) {
+                tasksTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="px-4 py-8 text-center text-info">暂无迁移任务</td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            let html = '';
+            tasks.forEach(task => {
+                html += `
+                    <tr class="hover:bg-light/50">
+                        <td class="px-4 py-2 border-b">${task.name}</td>
+                        <td class="px-4 py-2 border-b">${task.source_config.name}</td>
+                        <td class="px-4 py-2 border-b">${task.target_config.name}</td>
+                        <td class="px-4 py-2 border-b">${task.target_table}</td>
+                        <td class="px-4 py-2 border-b">${task.created_at}</td>
+                        <td class="px-4 py-2 border-b text-right">
+                            <button 
+                                class="bg-primary hover:bg-primary/90 text-white px-3 py-1 rounded-md text-sm mr-2 transition-all-300"
+                                onclick="runTask('${task.id}')"
+                            >
+                                执行
+                            </button>
+                            <button 
+                                class="bg-warning hover:bg-warning/90 text-white px-3 py-1 rounded-md text-sm mr-2 transition-all-300"
+                                onclick="editTask('${task.id}')"
+                            >
+                                编辑
+                            </button>
+                            <button 
+                                class="bg-danger hover:bg-danger/90 text-white px-3 py-1 rounded-md text-sm transition-all-300"
+                                onclick="deleteTask('${task.id}')"
+                            >
+                                删除
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tasksTableBody.innerHTML = html;
+        }
+
+        function runTask(taskId) {
+            showConfirmDialog('提示', '确定要执行这个迁移任务吗？', 'info', '确定', '取消', () => {
+                axios.post(`/api/tasks/${taskId}/run`).then(response => {
+                    if (response.data.success) {
+                        showMessageAlert('任务执行成功', 'success');
+                        loadTasks();
+                    } else {
+                        showMessageAlert('任务执行失败：' + response.data.message, 'error');
+                    }
+                });
+            });
+        }
+
+        function editTask(taskId) {
+            openTaskDialog(true, taskId);
+        }
+
+        function deleteTask(taskId) {
+            showConfirmDialog('警告', '确定要删除这个迁移任务吗？', 'warning', '确定', '取消', () => {
+                axios.delete(`/api/tasks/${taskId}`).then(response => {
+                    if (response.data.success) {
+                        showMessageAlert('删除成功', 'success');
+                        loadTasks();
+                    } else {
+                        showMessageAlert('删除失败', 'error');
+                    }
+                });
+            });
+        }
+
+        function openTaskDialog(edit, taskId) {
+            isEditTask = edit;
+            editingTaskId = taskId;
+            
+            if (edit) {
+                document.getElementById('task-dialog-title').textContent = '编辑迁移任务';
+                axios.get('/api/tasks').then(response => {
+                    if (response.data.success) {
+                        const task = response.data.data.find(t => t.id === taskId);
+                        if (task) {
+                            taskForm = { ...task };
+                            populateTaskForm();
+                            taskDialog.classList.remove('hidden');
+                        }
+                    }
+                });
+            } else {
+                document.getElementById('task-dialog-title').textContent = '新建迁移任务';
+                taskForm = {
+                    name: '',
+                    source_config: {},
+                    source_query: '',
+                    target_config: {},
+                    target_table: '',
+                    table_structure: [],
+                    schedule_type: 'manual',
+                    schedule_time: '00:00'
+                };
+                populateTaskForm();
+                taskDialog.classList.remove('hidden');
+            }
+        }
+
+        function populateTaskForm() {
+            taskName.value = taskForm.name;
+            taskSourceQuery.value = taskForm.source_query;
+            taskTargetTable.value = taskForm.target_table;
+            taskScheduleType.value = taskForm.schedule_type;
+            taskScheduleTime.value = taskForm.schedule_time;
+            
+            // 填充数据源选择
+            updateDataSourceSelects();
+            
+            // 填充表结构
+            renderTableStructure();
+        }
+
+        function updateDataSourceSelects() {
+            // 清空选择
+            taskSourceConfig.innerHTML = '';
+            taskTargetConfig.innerHTML = '';
+            
+            // 添加选项
+            dataSources.forEach(source => {
+                const option1 = document.createElement('option');
+                option1.value = source.name;
+                option1.textContent = source.name;
+                taskSourceConfig.appendChild(option1);
+                
+                const option2 = document.createElement('option');
+                option2.value = source.name;
+                option2.textContent = source.name;
+                taskTargetConfig.appendChild(option2);
+            });
+            
+            // 设置选中值
+            if (taskForm.source_config && taskForm.source_config.name) {
+                taskSourceConfig.value = taskForm.source_config.name;
+            }
+            if (taskForm.target_config && taskForm.target_config.name) {
+                taskTargetConfig.value = taskForm.target_config.name;
+            }
+        }
+
+        function renderTableStructure() {
+            if (taskForm.table_structure.length === 0) {
+                tableStructureBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="px-4 py-4 text-center text-info">请点击生成表结构按钮</td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            let html = '';
+            taskForm.table_structure.forEach((field, index) => {
+                html += `
+                    <tr>
+                        <td class="px-4 py-2 border-b">${field.name}</td>
+                        <td class="px-4 py-2 border-b">
+                            <select 
+                                class="w-full px-2 py-1 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                                onchange="updateFieldType(${index}, this.value)"
+                            >
+                                <option value="VARCHAR" ${field.type === 'VARCHAR' ? 'selected' : ''}>VARCHAR</option>
+                                <option value="INT" ${field.type === 'INT' ? 'selected' : ''}>INT</option>
+                                <option value="BIGINT" ${field.type === 'BIGINT' ? 'selected' : ''}>BIGINT</option>
+                                <option value="DATE" ${field.type === 'DATE' ? 'selected' : ''}>DATE</option>
+                                <option value="DATETIME" ${field.type === 'DATETIME' ? 'selected' : ''}>DATETIME</option>
+                                <option value="TEXT" ${field.type === 'TEXT' ? 'selected' : ''}>TEXT</option>
+                            </select>
+                        </td>
+                        <td class="px-4 py-2 border-b">
+                            <input 
+                                type="number" 
+                                min="1" 
+                                value="${field.length}"
+                                class="w-full px-2 py-1 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                                onchange="updateFieldLength(${index}, this.value)"
+                            />
+                        </td>
+                        <td class="px-4 py-2 border-b">
+                            <select 
+                                class="w-full px-2 py-1 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                                onchange="updateFieldCollation(${index}, this.value)"
+                            >
+                                <option value="" ${field.collation === '' ? 'selected' : ''}>默认</option>
+                                <option value="utf8mb4_general_ci" ${field.collation === 'utf8mb4_general_ci' ? 'selected' : ''}>utf8mb4_general_ci</option>
+                                <option value="utf8mb4_unicode_ci" ${field.collation === 'utf8mb4_unicode_ci' ? 'selected' : ''}>utf8mb4_unicode_ci</option>
+                                <option value="utf8_general_ci" ${field.collation === 'utf8_general_ci' ? 'selected' : ''}>utf8_general_ci</option>
+                                <option value="utf8_unicode_ci" ${field.collation === 'utf8_unicode_ci' ? 'selected' : ''}>utf8_unicode_ci</option>
+                            </select>
+                        </td>
+                        <td class="px-4 py-2 border-b">
+                            <input 
+                                type="checkbox" 
+                                ${field.nullable ? 'checked' : ''}
+                                class="w-4 h-4"
+                                onchange="updateFieldNullable(${index}, this.checked)"
+                            />
+                        </td>
+                        <td class="px-4 py-2 border-b">
+                            <input 
+                                type="checkbox" 
+                                ${field.primary_key ? 'checked' : ''}
+                                class="w-4 h-4"
+                                onchange="updateFieldPrimaryKey(${index}, this.checked)"
+                            />
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tableStructureBody.innerHTML = html;
+        }
+
+        function updateFieldType(index, value) {
+            taskForm.table_structure[index].type = value;
+        }
+
+        function updateFieldLength(index, value) {
+            taskForm.table_structure[index].length = parseInt(value);
+        }
+
+        function updateFieldNullable(index, value) {
+            taskForm.table_structure[index].nullable = value;
+        }
+
+        function updateFieldPrimaryKey(index, value) {
+            taskForm.table_structure[index].primary_key = value;
+        }
+
+        function updateFieldCollation(index, value) {
+            taskForm.table_structure[index].collation = value;
+        }
+
+        function closeTaskDialogFunc() {
+            taskDialog.classList.add('hidden');
+        }
+
+        function saveTaskFunc() {
+            // 获取表单数据
+            const name = taskName.value.trim();
+            const sourceName = taskSourceConfig.value;
+            const sourceQuery = taskSourceQuery.value.trim();
+            const targetName = taskTargetConfig.value;
+            const targetTable = taskTargetTable.value.trim();
+            const scheduleType = taskScheduleType.value;
+            const scheduleTime = taskScheduleTime.value;
+            
+            // 校验必填字段
+            if (!name) {
+                showMessageAlert('请输入任务名称', 'error');
+                return;
+            }
+            if (!sourceName) {
+                showMessageAlert('请选择源数据源', 'error');
+                return;
+            }
+            if (!sourceQuery) {
+                showMessageAlert('请输入SQL查询语句', 'error');
+                return;
+            }
+            if (!targetName) {
+                showMessageAlert('请选择目标数据源', 'error');
+                return;
+            }
+            if (!targetTable) {
+                showMessageAlert('请输入目标表名', 'error');
+                return;
+            }
+            
+            // 获取数据源
+            const sourceConfig = dataSources.find(s => s.name === sourceName) || {};
+            const targetConfig = dataSources.find(s => s.name === targetName) || {};
+            
+            // 校验数据源是否存在
+            if (!sourceConfig.name) {
+                showMessageAlert('源数据源不存在', 'error');
+                return;
+            }
+            if (!targetConfig.name) {
+                showMessageAlert('目标数据源不存在', 'error');
+                return;
+            }
+            
+            // 获取表存在时的处理方式
+            const ifExists = taskIfExists.value;
+            
+            // 更新表单数据
+            taskForm.name = name;
+            taskForm.source_config = sourceConfig;
+            taskForm.source_query = sourceQuery;
+            taskForm.target_config = targetConfig;
+            taskForm.target_table = targetTable;
+            taskForm.if_exists = ifExists;
+            taskForm.schedule_type = scheduleType;
+            taskForm.schedule_time = scheduleTime;
+            
+            if (isEditTask) {
+                axios.put(`/api/tasks/${editingTaskId}`, taskForm).then(response => {
+                    if (response.data.success) {
+                        showMessageAlert('更新成功', 'success');
+                        closeTaskDialogFunc();
+                        loadTasks();
+                    } else {
+                        showMessageAlert('更新失败', 'error');
+                    }
+                });
+            } else {
+                axios.post('/api/tasks', taskForm).then(response => {
+                    if (response.data.success) {
+                        showMessageAlert('添加成功', 'success');
+                        closeTaskDialogFunc();
+                        loadTasks();
+                    } else {
+                        showMessageAlert('添加失败', 'error');
+                    }
+                });
+            }
+        }
+
+        // 生成表结构
+        let sourceFields = []; // 保存源表字段
+
+        function generateTableStructureFunc() {
+            const sourceName = taskSourceConfig.value;
+            const sourceQuery = taskSourceQuery.value;
+            
+            if (!sourceName || !sourceQuery) {
+                showMessageAlert('请选择源数据源并输入SQL查询语句', 'error');
+                return;
+            }
+            
+            const source = dataSources.find(s => s.name === sourceName);
+            if (!source) {
+                showMessageAlert('源数据源不存在', 'error');
+                return;
+            }
+            
+            // 显示加载状态
+            const originalText = generateTableStructure.innerHTML;
+            generateTableStructure.innerHTML = '<svg class="w-4 h-4 inline mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>生成表结构中...';
+            generateTableStructure.disabled = true;
+            
+            axios.post('/api/database/query', {
+                host: source.host,
+                port: source.port,
+                user: source.user,
+                password: source.password,
+                database: source.database,
+                query: sourceQuery
+            }).then(response => {
+                if (response.data.success) {
+                    if (response.data.result && response.data.result.length > 0) {
+                        const columns = Object.keys(response.data.result[0]);
+                        // 保存源表字段
+                        sourceFields = columns;
+                        taskForm.table_structure = columns.map(column => ({
+                            name: column,
+                            type: 'VARCHAR',
+                            length: 255,
+                            collation: '',
+                            nullable: true,
+                            primary_key: false
+                        }));
+                        renderTableStructure();
+                        showMessageAlert('表结构生成成功', 'success');
+                    } else {
+                        showMessageAlert('查询结果为空，无法生成表结构', 'error');
+                    }
+                } else {
+                    showMessageAlert('查询失败：' + (response.data.message || '未知错误'), 'error');
+                }
+            }).catch(error => {
+                showMessageAlert('网络错误：' + error.message, 'error');
+            }).finally(() => {
+                // 恢复按钮状态
+                generateTableStructure.innerHTML = originalText;
+                generateTableStructure.disabled = false;
+            });
+        }
+
+        // 基础设置
+        function saveSettingsFunc() {
+            settings.default_charset = defaultCharset.value;
+            settings.default_collation = defaultCollation.value;
+            settings.default_engine = defaultEngine.value;
+            settings.batch_size = parseInt(batchSize.value);
+            settings.allow_remote = allowRemoteAccess;
+            settings.log_level = logLevel.value;
+            
+            axios.post('/api/settings', settings).then(response => {
+                if (response.data.success) {
+                    showMessageAlert('设置保存成功，需要重启应用后生效', 'success');
+                } else {
+                    showMessageAlert('设置保存失败：' + (response.data.message || '未知错误'), 'error');
+                }
+            }).catch(error => {
+                showMessageAlert('网络错误：' + error.message, 'error');
+            });
+        }
+
+        // 打开字段映射对话框
+        function openFieldMappingDialog() {
+            // 清空之前的映射
+            currentMappings = { ...taskForm.field_mapping };
+            
+            // 填充源表字段和目标表字段
+            populateFieldOptions();
+            
+            // 显示已有的映射
+            renderMappings();
+            
+            // 显示对话框
+            fieldMappingDialog.classList.remove('hidden');
+        }
+
+        // 关闭字段映射对话框
+        function closeFieldMappingDialog() {
+            fieldMappingDialog.classList.add('hidden');
+        }
+
+        // 填充字段选项
+        function populateFieldOptions() {
+            // 清空选项
+            sourceField.innerHTML = '<option value="">请选择源表字段</option>';
+            targetField.innerHTML = '<option value="">请选择目标表字段</option>';
+            
+            // 从表结构中获取目标表字段
+            taskForm.table_structure.forEach(field => {
+                const option = document.createElement('option');
+                option.value = field.name;
+                option.textContent = field.name;
+                targetField.appendChild(option);
+            });
+            
+            // 从生成表结构时保存的源表字段中获取
+            if (sourceFields.length > 0) {
+                sourceFields.forEach(field => {
+                    const option = document.createElement('option');
+                    option.value = field;
+                    option.textContent = field;
+                    sourceField.appendChild(option);
+                });
+            } else {
+                // 如果没有源表字段，使用目标表字段作为示例
+                taskForm.table_structure.forEach(field => {
+                    const option = document.createElement('option');
+                    option.value = field.name;
+                    option.textContent = field.name;
+                    sourceField.appendChild(option);
+                });
+            }
+        }
+
+        // 渲染已有的映射
+        function renderMappings() {
+            mappingList.innerHTML = '';
+            
+            for (const [targetField, sourceField] of Object.entries(currentMappings)) {
+                const mappingItem = document.createElement('div');
+                mappingItem.className = 'flex items-center justify-between p-3 border border-neutral-200 rounded-lg bg-neutral-50 hover:bg-neutral-100 transition-all-300';
+                mappingItem.innerHTML = `
+                    <div class="flex items-center">
+                        <span class="text-sm font-medium text-neutral-700">${sourceField}</span>
+                        <span class="mx-3 text-neutral-400">→</span>
+                        <span class="text-sm font-medium text-neutral-700">${targetField}</span>
+                    </div>
+                    <button class="text-danger hover:text-danger/80 p-1.5 rounded-full hover:bg-danger/10 transition-all-300" onclick="removeMapping('${targetField}')">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                `;
+                mappingList.appendChild(mappingItem);
+            }
+        }
+
+        // 添加映射
+        function addMappingFunc() {
+            const source = sourceField.value;
+            const target = targetField.value;
+            
+            if (!source || !target) {
+                showMessageAlert('请选择源表字段和目标表字段', 'error');
+                return;
+            }
+            
+            currentMappings[target] = source;
+            renderMappings();
+            
+            // 清空选择
+            sourceField.value = '';
+            targetField.value = '';
+        }
+
+        // 移除映射
+        function removeMapping(targetField) {
+            delete currentMappings[targetField];
+            renderMappings();
+        }
+
+        // 保存字段映射
+        function saveFieldMappingFunc() {
+            taskForm.field_mapping = currentMappings;
+            showMessageAlert('字段映射保存成功', 'success');
+            closeFieldMappingDialog();
+        }
+
+        // 加载设置
+        function loadSettings() {
+            axios.get('/api/settings').then(response => {
+                if (response.data.success) {
+                    const loadedSettings = response.data.settings;
+                    settings = { ...settings, ...loadedSettings };
+                    
+                    // 更新表单
+                    defaultCharset.value = settings.default_charset;
+                    defaultCollation.value = settings.default_collation;
+                    defaultEngine.value = settings.default_engine;
+                    batchSize.value = settings.batch_size;
+                    logLevel.value = settings.log_level;
+                    
+                    // 更新远程访问开关
+                    allowRemoteAccess = settings.allow_remote || false;
+                    updateRemoteToggleUI();
+                }
+            });
+        }
+
+        // 远程访问开关状态
+        let allowRemoteAccess = false;
+
+        // 切换远程访问
+        function toggleRemoteAccess() {
+            allowRemoteAccess = !allowRemoteAccess;
+            updateRemoteToggleUI();
+        }
+
+        // 更新远程访问开关UI
+        function updateRemoteToggleUI() {
+            const btn = document.getElementById('allow-remote-btn');
+            const indicator = document.getElementById('remote-toggle-indicator');
+            const statusText = document.getElementById('remote-status-text');
+            
+            if (allowRemoteAccess) {
+                btn.classList.remove('bg-gray-300');
+                btn.classList.add('bg-green-500');
+                indicator.classList.remove('translate-x-0');
+                indicator.classList.add('translate-x-5');
+                statusText.textContent = '允许';
+                statusText.classList.remove('text-gray-500');
+                statusText.classList.add('text-green-500');
+            } else {
+                btn.classList.remove('bg-green-500');
+                btn.classList.add('bg-gray-300');
+                indicator.classList.remove('translate-x-5');
+                indicator.classList.add('translate-x-0');
+                statusText.textContent = '不允许';
+                statusText.classList.remove('text-green-500');
+                statusText.classList.add('text-gray-500');
+            }
+        }
+
+        // 初始化远程访问开关
+        function initRemoteToggle() {
+            allowRemoteAccess = settings.allow_remote || false;
+            updateRemoteToggleUI();
+        }
+    </script>
+</body>
+</html>

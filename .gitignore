@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Packaging
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Electron
+electron/node_modules/
+electron/dist/
+
+# Logs
+logs/
+*.log
+
+# Environment
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# Windows
+Thumbs.db
+.DS_Store
+
+# Testing
+test_*.py
+verify_*.py
+
+# Database
+test_db.sqlite

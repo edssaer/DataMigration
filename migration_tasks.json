@@ -1,0 +1,314 @@
+[
+  {
+    "created_at": "2026-03-02T17:53:30.645907",
+    "id": "1",
+    "name": "测试",
+    "schedule_time": "00:00",
+    "schedule_type": "manual",
+    "source_config": {
+      "database": "NJYY",
+      "host": "localhost",
+      "name": "本地数据库",
+      "password": "@W203222w",
+      "port": 3306,
+      "type": "mysql",
+      "user": "root"
+    },
+    "source_query": "select * from user_info;",
+    "status": "completed",
+    "table_structure": [
+      {
+        "length": 255,
+        "name": "age",
+        "nullable": true,
+        "primary_key": false,
+        "type": "VARCHAR"
+      },
+      {
+        "length": 255,
+        "name": "create_time",
+        "nullable": true,
+        "primary_key": false,
+        "type": "VARCHAR"
+      },
+      {
+        "length": 255,
+        "name": "email",
+        "nullable": true,
+        "primary_key": false,
+        "type": "VARCHAR"
+      },
+      {
+        "length": 255,
+        "name": "gender",
+        "nullable": true,
+        "primary_key": false,
+        "type": "VARCHAR"
+      },
+      {
+        "length": 255,
+        "name": "id",
+        "nullable": true,
+        "primary_key": true,
+        "type": "VARCHAR"
+      },
+      {
+        "length": 255,
+        "name": "phone",
+        "nullable": true,
+        "primary_key": false,
+        "type": "VARCHAR"
+      },
+      {
+        "length": 255,
+        "name": "status",
+        "nullable": true,
+        "primary_key": false,
+        "type": "VARCHAR"
+      },
+      {
+        "length": 255,
+        "name": "update_time",
+        "nullable": true,
+        "primary_key": false,
+        "type": "VARCHAR"
+      },
+      {
+        "length": 255,
+        "name": "username",
+        "nullable": true,
+        "primary_key": false,
+        "type": "VARCHAR"
+      }
+    ],
+    "target_config": {
+      "database": "NJYY",
+      "host": "localhost",
+      "name": "本地数据库",
+      "password": "@W203222w",
+      "port": 3306,
+      "type": "mysql",
+      "user": "root"
+    },
+    "target_table": "user_info_2",
+    "updated_at": "2026-03-02T17:58:58.497220"
+  },
+  {
+    "if_exists": "truncate",
+    "name": "??Truncate??",
+    "source_config": {
+      "port": 3306,
+      "name": "??MySQL",
+      "password": "@W203222w",
+      "host": "localhost",
+      "type": "mysql",
+      "user": "root",
+      "database": "njyy"
+    },
+    "source_query": "SELECT * FROM test_source_table LIMIT 1000",
+    "target_table": "test_target_table",
+    "table_structure": [
+      {
+        "collation": "",
+        "name": "id",
+        "type": "INT",
+        "length": 11,
+        "primary_key": true,
+        "nullable": false
+      },
+      {
+        "collation": "",
+        "name": "name",
+        "type": "VARCHAR",
+        "length": 100,
+        "primary_key": false,
+        "nullable": true
+      },
+      {
+        "collation": "",
+        "name": "email",
+        "type": "VARCHAR",
+        "length": 100,
+        "primary_key": false,
+        "nullable": true
+      },
+      {
+        "collation": "",
+        "name": "phone",
+        "type": "VARCHAR",
+        "length": 20,
+        "primary_key": false,
+        "nullable": true
+      },
+      {
+        "collation": "",
+        "name": "address",
+        "type": "VARCHAR",
+        "length": 255,
+        "primary_key": false,
+        "nullable": true
+      },
+      {
+        "collation": "",
+        "name": "age",
+        "type": "INT",
+        "length": 11,
+        "primary_key": false,
+        "nullable": true
+      },
+      {
+        "collation": "",
+        "name": "salary",
+        "type": "DECIMAL",
+        "length": 10,
+        "primary_key": false,
+        "nullable": true
+      },
+      {
+        "collation": "",
+        "name": "department",
+        "type": "VARCHAR",
+        "length": 50,
+        "primary_key": false,
+        "nullable": true
+      },
+      {
+        "primary_key": false,
+        "name": "hire_date",
+        "collation": "",
+        "type": "DATE",
+        "nullable": true
+      },
+      {
+        "collation": "",
+        "name": "status",
+        "type": "VARCHAR",
+        "length": 20,
+        "primary_key": false,
+        "nullable": true
+      }
+    ],
+    "target_config": {
+      "port": 3306,
+      "name": "??MySQL",
+      "password": "@W203222w",
+      "host": "localhost",
+      "type": "mysql",
+      "user": "root",
+      "database": "njyy"
+    },
+    "id": "2",
+    "created_at": "2026-03-03T01:45:30.418466",
+    "status": "completed",
+    "updated_at": "2026-03-03T01:45:44.698917"
+  },
+  {
+    "if_exists": "rename",
+    "name": "??Rename??",
+    "source_config": {
+      "port": 3306,
+      "name": "??MySQL",
+      "password": "@W203222w",
+      "host": "localhost",
+      "type": "mysql",
+      "user": "root",
+      "database": "njyy"
+    },
+    "source_query": "SELECT * FROM test_source_table LIMIT 500",
+    "target_table": "test_target_table",
+    "table_structure": [
+      {
+        "collation": "",
+        "name": "id",
+        "type": "INT",
+        "length": 11,
+        "primary_key": true,
+        "nullable": false
+      },
+      {
+        "collation": "",
+        "name": "name",
+        "type": "VARCHAR",
+        "length": 100,
+        "primary_key": false,
+        "nullable": true
+      },
+      {
+        "collation": "",
+        "name": "email",
+        "type": "VARCHAR",
+        "length": 100,
+        "primary_key": false,
+        "nullable": true
+      },
+      {
+        "collation": "",
+        "name": "phone",
+        "type": "VARCHAR",
+        "length": 20,
+        "primary_key": false,
+        "nullable": true
+      },
+      {
+        "collation": "",
+        "name": "address",
+        "type": "VARCHAR",
+        "length": 255,
+        "primary_key": false,
+        "nullable": true
+      },
+      {
+        "collation": "",
+        "name": "age",
+        "type": "INT",
+        "length": 11,
+        "primary_key": false,
+        "nullable": true
+      },
+      {
+        "collation": "",
+        "name": "salary",
+        "type": "DECIMAL",
+        "length": 10,
+        "primary_key": false,
+        "nullable": true
+      },
+      {
+        "collation": "",
+        "name": "department",
+        "type": "VARCHAR",
+        "length": 50,
+        "primary_key": false,
+        "nullable": true
+      },
+      {
+        "primary_key": false,
+        "name": "hire_date",
+        "collation": "",
+        "type": "DATE",
+        "nullable": true
+      },
+      {
+        "collation": "",
+        "name": "status",
+        "type": "VARCHAR",
+        "length": 20,
+        "primary_key": false,
+        "nullable": true
+      }
+    ],
+    "target_config": {
+      "port": 3306,
+      "name": "??MySQL",
+      "password": "@W203222w",
+      "host": "localhost",
+      "type": "mysql",
+      "user": "root",
+      "database": "njyy"
+    },
+    "id": "3",
+    "created_at": "2026-03-03T01:46:21.533921",
+    "status": "completed",
+    "updated_at": "2026-03-03T01:46:32.926167"
+  }
+]
